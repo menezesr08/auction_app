@@ -29,7 +29,7 @@ class _AuctionCreatePageState extends State<AuctionCreatePage> {
       deployContract();
     });
   }
-
+  // this auctionservice doesn not work. We need to use it in the build method too
   void deployContract() async {
     List<dynamic> res = await widget.auctionService.callFunction(
         'auctionAddress', widget.auctionService.auctionCreatorContract);
