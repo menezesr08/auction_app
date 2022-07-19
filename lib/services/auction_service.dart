@@ -27,8 +27,8 @@ class AuctionService extends ChangeNotifier {
   }
 
   Future<void> init() async {
-    auctionCreatorContract =
-        await loadContract(auctionCreatorAddress, 'AuctionCreator', 'assets/auctionCreatorAbi.json');
+    auctionCreatorContract = await loadContract(auctionCreatorAddress,
+        'AuctionCreator', 'assets/auctionCreatorAbi.json');
 
     client = Web3Client(infuraUrl, Client());
     logger = Logger();
@@ -140,6 +140,20 @@ class AuctionService extends ChangeNotifier {
     await launchUrl(Uri.parse(sessionUrl!));
   }
 
+  Future<List<dynamic>> callFunction(
+    String functionName,
+    DeployedContract contract,
+  ) async {
+    final ethFunction = contract.function(functionName);
+    final result = await client.call(
+        contract: contract,
+        function: ethFunction,
+        params: [],
+        sender: EthereumAddress.fromHex(account));
+
+    return result;
+  }
+
   Future<String> createAuctionContract() async {
     final res = await sendTransactionToFunction(
         'createAuction', auctionCreatorContract);
@@ -148,6 +162,7 @@ class AuctionService extends ChangeNotifier {
   }
 
   Future<void> deployAuctionContract(String contractAddress) async {
-    auctionContract = await loadContract(contractAddress, 'Auction', 'assets/auctionAbi.json');
+    auctionContract = await loadContract(
+        contractAddress, 'Auction', 'assets/auctionAbi.json');
   }
 }

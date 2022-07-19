@@ -11,14 +11,20 @@ void main() {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const HomePage(),
+      home: HomePage(),
     ),
   ));
 }
 
-class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
+class HomePage extends StatefulWidget {
+  bool isLoading = false;
+  HomePage({Key? key}) : super(key: key);
 
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     var auctionService = context.watch<AuctionService>();
@@ -29,21 +35,24 @@ class HomePage extends StatelessWidget {
         ),
         body: auctionService.connected
             ? Center(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await auctionService
-                        .createAuctionContract()
-                        .then((value) => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => AuctionCreatePage(
-                                        auctionService: auctionService,
-                                        auctionAddress: value,
-                                      )),
-                            ));
-                  },
-                  child: const Text('Create Auction'),
-                ),
+                child: widget.isLoading
+                    ? CircularProgressIndicator()
+                    : ElevatedButton(
+                        onPressed: () async {
+                          await auctionService
+                              .createAuctionContract()
+                              .then((transactionRef) => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => AuctionCreatePage(
+                                              auctionService: auctionService,
+                                              createAuctionTransactionRef:
+                                                  transactionRef,
+                                            )),
+                                  ));
+                        },
+                        child: const Text('Create Auction'),
+                      ),
               )
             : Center(
                 child: InkWell(
