@@ -45,7 +45,6 @@ class _HomePageState extends State<HomePage> {
                                     context,
                                     MaterialPageRoute(
                                         builder: (context) => AuctionCreatePage(
-                                         
                                               createAuctionTransactionRef:
                                                   transactionRef,
                                             )),
