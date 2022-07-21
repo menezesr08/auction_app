@@ -21,6 +21,7 @@ class AuctionService extends ChangeNotifier {
   Map<String, String> participantsAndBids = {};
 
   bool connected = false;
+  bool isLoading = false;
   String? sessionUrl;
   SessionStatus? session;
 
@@ -118,9 +119,12 @@ class AuctionService extends ChangeNotifier {
   }
 
   Future<String> createAuctionContract() async {
+    isLoading = true;
     final res = await sendTransactionToFunction(
         'createAuction', auctionCreatorContract, null);
     logger.d('Newly created Auction address is: $res[0]');
+    await Future.delayed(Duration(seconds: 5));
+    isLoading = false;
     return res[0];
   }
 
@@ -133,7 +137,9 @@ class AuctionService extends ChangeNotifier {
       DeployedContract contract, EtherAmount? amount) async {
     WalletConnectEthereumCredentials credentials = this.credentials;
     final ethFunction = contract.function(functionName);
-
+    logger.d('Function is: ${ethFunction.name}');
+    logger.d('Deploying with contract: ${contract.function(functionName).name}');
+    logger.d('Amount is: ${amount?.getInWei.toInt().toString()}');
     Transaction transaction = Transaction.callContract(
       from: EthereumAddress.fromHex(account),
       function: ethFunction,
@@ -143,6 +149,8 @@ class AuctionService extends ChangeNotifier {
       value: amount,
       maxGas: null,
     );
+
+   
 
     logger.d('Sending transaction...');
     _openMetamask();
@@ -167,12 +175,20 @@ class AuctionService extends ChangeNotifier {
   }
 
   Future<String> placeBid(String value) async {
-    EtherAmount amount = EtherAmount.fromUnitAndValue(EtherUnit.wei, value);
+    int wei = (double.parse(value) * 1000000000000000000).toInt();
+    logger.d('Bidding amount in wei: $wei');
+    isLoading = true;
+
+    EtherAmount amount = EtherAmount.fromUnitAndValue(EtherUnit.wei, wei);
+    logger.d('Placing bid...');
     final res =
         await sendTransactionToFunction('placeBid', auctionContract, amount);
+
+    Future.delayed(const Duration(seconds: 3));
     logger.d('Placed a bid. Transaction ref is: $res[0]');
     bidders.add(account);
     await fetchBids();
+    isLoading = false;
     return res[0];
   }
 

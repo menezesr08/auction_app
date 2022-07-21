@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../utils/helper.dart';
 import '../widgets/row_cell.dart';
-
+//TODO: Your auction contract isnt building properly. Create new contracts and check in if they appear on kovan etherscan
 class AuctionCreatePage extends StatefulWidget {
   AuctionService? auctionService;
   final String createAuctionTransactionRef;
@@ -91,67 +91,71 @@ class _AuctionCreatePageState extends State<AuctionCreatePage> {
         title: Text('Auction: ${widget.contractAddress}'),
       ),
       backgroundColor: Colors.black38,
-      body: Column(children: [
-        SizedBox(
-          height: size.height * 0.05,
-        ),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.blueAccent, width: 5),
-          ),
-          child: Row(
-            children: [
-              const Text('Account:',
-                  style: TextStyle(fontSize: 30, color: Colors.blueAccent)),
-              const SizedBox(
-                width: 20,
+      body: widget.auctionService!.isLoading
+          ? CircularProgressIndicator()
+          : Column(children: [
+              SizedBox(
+                height: size.height * 0.05,
               ),
-              Text(
-                truncateEthAddress(widget.auctionService!.account),
-                style: const TextStyle(fontSize: 20, color: Colors.blueAccent),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.blueAccent, width: 5),
+                ),
+                child: Row(
+                  children: [
+                    const Text('Account:',
+                        style:
+                            TextStyle(fontSize: 30, color: Colors.blueAccent)),
+                    const SizedBox(
+                      width: 20,
+                    ),
+                    Text(
+                      truncateEthAddress(widget.auctionService!.account),
+                      style: const TextStyle(
+                          fontSize: 20, color: Colors.blueAccent),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
-        Row(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 15, right: 15),
-                child: TextField(
-                    controller: numberController,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(color: Colors.red),
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.allow(RegExp(r'[.0-9]'))
-                    ]),
+              Row(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 15, right: 15),
+                      child: TextField(
+                          controller: numberController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(color: Colors.red),
+                          inputFormatters: <TextInputFormatter>[
+                            FilteringTextInputFormatter.allow(RegExp(r'[.0-9]'))
+                          ]),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      await widget.auctionService?.placeBid(
+                        numberController.text.trim(),
+                      );
+                    },
+                    child: const Text('Place Bid'),
+                  ),
+                ],
               ),
-            ),
-            TextButton(
-              onPressed: () async {
-                await widget.auctionService?.placeBid(
-                  numberController.text.trim(),
-                );
-              },
-              child: const Text('Place Bid'),
-            ),
-          ],
-        ),
-        TextButton(
-          onPressed: () {},
-          child: const Text('Finalize Auction'),
-        ),
-        TextButton(
-          onPressed: () {},
-          child: const Text('Cancel Auction'),
-        ),
-        SizedBox(
-          height: size.height * 0.05,
-        ),
-        AuctionTableOutput(
-          rows: tableRows,
-        ),
-      ]),
+              TextButton(
+                onPressed: () {},
+                child: const Text('Finalize Auction'),
+              ),
+              TextButton(
+                onPressed: () {},
+                child: const Text('Cancel Auction'),
+              ),
+              SizedBox(
+                height: size.height * 0.05,
+              ),
+              AuctionTableOutput(
+                rows: tableRows,
+              ),
+            ]),
     );
   }
 }

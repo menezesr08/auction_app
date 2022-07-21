@@ -41,14 +41,17 @@ class _HomePageState extends State<HomePage> {
                         onPressed: () async {
                           await auctionService
                               .createAuctionContract()
-                              .then((transactionRef) => Navigator.push(
+                              .then((transactionRef) => {
+                               
+                                Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                         builder: (context) => AuctionCreatePage(
                                               createAuctionTransactionRef:
                                                   transactionRef,
                                             )),
-                                  ));
+                                  )
+                              });
                         },
                         child: const Text('Create Auction'),
                       ),
