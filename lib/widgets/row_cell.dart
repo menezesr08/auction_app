@@ -10,7 +10,7 @@ class RowCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: TextStyle(fontSize: 20),
+      style: TextStyle(fontSize: 15),
       textAlign: TextAlign.center,
     );
   }

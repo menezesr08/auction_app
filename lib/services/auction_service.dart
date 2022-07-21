@@ -17,6 +17,8 @@ class AuctionService extends ChangeNotifier {
   late Web3Client client;
   late Logger logger;
   String account = '';
+  List<String> bidders = [];
+  Map<String, String> participantsAndBids = {};
 
   bool connected = false;
   String? sessionUrl;
@@ -89,6 +91,7 @@ class AuctionService extends ChangeNotifier {
     }
 
     connected = true;
+
     account = session!.accounts[0];
 
     EthereumWalletConnectProvider provider =
@@ -97,11 +100,39 @@ class AuctionService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String> sendTransactionToFunction(
-      String functionName, DeployedContract contract) async {
+  void _openMetamask() async {
+    logger.d('Opening metamask...');
+    await launchUrl(Uri.parse(sessionUrl!));
+  }
+
+  Future<List<dynamic>> callFunction(
+      String functionName, DeployedContract contract, List params) async {
+    final ethFunction = contract.function(functionName);
+    final result = await client.call(
+        contract: contract,
+        function: ethFunction,
+        params: params,
+        sender: EthereumAddress.fromHex(account));
+
+    return result;
+  }
+
+  Future<String> createAuctionContract() async {
+    final res = await sendTransactionToFunction(
+        'createAuction', auctionCreatorContract, null);
+    logger.d('Newly created Auction address is: $res[0]');
+    return res[0];
+  }
+
+  Future<void> deployAuctionContract(String contractAddress) async {
+    auctionContract = await loadContract(
+        contractAddress, 'Auction', 'assets/auctionAbi.json');
+  }
+
+  Future<String> sendTransactionToFunction(String functionName,
+      DeployedContract contract, EtherAmount? amount) async {
     WalletConnectEthereumCredentials credentials = this.credentials;
     final ethFunction = contract.function(functionName);
-    // don't need to send a value because we are just calling functions
 
     Transaction transaction = Transaction.callContract(
       from: EthereumAddress.fromHex(account),
@@ -109,7 +140,7 @@ class AuctionService extends ChangeNotifier {
       contract: contract,
       parameters: [],
       gasPrice: await client.getGasPrice(),
-      value: null,
+      value: amount,
       maxGas: null,
     );
 
@@ -135,34 +166,29 @@ class AuctionService extends ChangeNotifier {
     return result;
   }
 
-  void _openMetamask() async {
-    logger.d('Opening metamask...');
-    await launchUrl(Uri.parse(sessionUrl!));
-  }
-
-  Future<List<dynamic>> callFunction(
-    String functionName,
-    DeployedContract contract,
-  ) async {
-    final ethFunction = contract.function(functionName);
-    final result = await client.call(
-        contract: contract,
-        function: ethFunction,
-        params: [],
-        sender: EthereumAddress.fromHex(account));
-
-    return result;
-  }
-
-  Future<String> createAuctionContract() async {
-    final res = await sendTransactionToFunction(
-        'createAuction', auctionCreatorContract);
-    logger.d('Newly created Auction address is: $res[0]');
+  Future<String> placeBid(String value) async {
+    EtherAmount amount = EtherAmount.fromUnitAndValue(EtherUnit.wei, value);
+    final res =
+        await sendTransactionToFunction('placeBid', auctionContract, amount);
+    logger.d('Placed a bid. Transaction ref is: $res[0]');
+    bidders.add(account);
+    await fetchBids();
     return res[0];
   }
 
-  Future<void> deployAuctionContract(String contractAddress) async {
-    auctionContract = await loadContract(
-        contractAddress, 'Auction', 'assets/auctionAbi.json');
+  Future<void> fetchBids() async {
+    List totalTaskList = await callFunction('bidCount', auctionContract, []);
+    logger.d('Number of bids: ${totalTaskList[0].toInt()}');
+
+    int totalTaskLen = totalTaskList[0].toInt();
+    participantsAndBids.clear();
+    for (var i = 0; i < totalTaskLen; i++) {
+      var temp = await callFunction('bids', auctionContract, [
+        EthereumAddress.fromHex(bidders[i]),
+      ]);
+      // print('Id of each note is: ' + (temp[0] as BigInt).toString());
+      participantsAndBids[bidders[i]] = temp[0].toString();
+    }
+    notifyListeners();
   }
 }

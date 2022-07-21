@@ -1,6 +1,7 @@
 import 'package:auction_app/services/auction_service.dart';
 import 'package:auction_app/widgets/auction_table_output.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 
@@ -22,6 +23,14 @@ class AuctionCreatePage extends StatefulWidget {
 }
 
 class _AuctionCreatePageState extends State<AuctionCreatePage> {
+  final numberController = TextEditingController();
+
+  @override
+  void dispose() {
+    numberController.dispose();
+    super.dispose();
+  }
+
   final tableRows = [
     const TableRow(
         decoration: BoxDecoration(
@@ -39,7 +48,6 @@ class _AuctionCreatePageState extends State<AuctionCreatePage> {
             textAlign: TextAlign.center,
           ),
         ]),
-
     TableRow(children: [
       RowCell(
         text: '2011',
@@ -65,7 +73,7 @@ class _AuctionCreatePageState extends State<AuctionCreatePage> {
   void deployContract() async {
     widget.auctionService = context.read<AuctionService>();
     List<dynamic> res = await widget.auctionService!.callFunction(
-        'auctionAddress', widget.auctionService!.auctionCreatorContract);
+        'auctionAddress', widget.auctionService!.auctionCreatorContract, []);
     widget.logger
         .d('Address of newly created auction is: ${res[0].toString()}');
     setState(() {
@@ -74,8 +82,6 @@ class _AuctionCreatePageState extends State<AuctionCreatePage> {
     await widget.auctionService!.deployAuctionContract(res[0].toString());
   }
 
-  //TODO: ROWCELL DOESNT WORK - TEXTALIGN
-  //TODO: statefulwidget loses state when hot reload - find out why. ContractAddress disappears but not auctionService
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -84,18 +90,19 @@ class _AuctionCreatePageState extends State<AuctionCreatePage> {
       appBar: AppBar(
         title: Text('Auction: ${widget.contractAddress}'),
       ),
+      backgroundColor: Colors.black38,
       body: Column(children: [
         SizedBox(
           height: size.height * 0.05,
         ),
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.black, width: 5),
+            border: Border.all(color: Colors.blueAccent, width: 5),
           ),
           child: Row(
             children: [
               const Text('Account:',
-                  style: TextStyle(fontSize: 30, color: Colors.black)),
+                  style: TextStyle(fontSize: 30, color: Colors.blueAccent)),
               const SizedBox(
                 width: 20,
               ),
@@ -106,9 +113,29 @@ class _AuctionCreatePageState extends State<AuctionCreatePage> {
             ],
           ),
         ),
-        TextButton(
-          onPressed: () {},
-          child: const Text('Place Bid'),
+        Row(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 15, right: 15),
+                child: TextField(
+                    controller: numberController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: Colors.red),
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.allow(RegExp(r'[.0-9]'))
+                    ]),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                await widget.auctionService?.placeBid(
+                  numberController.text.trim(),
+                );
+              },
+              child: const Text('Place Bid'),
+            ),
+          ],
         ),
         TextButton(
           onPressed: () {},
